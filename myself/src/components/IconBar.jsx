@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { LIQUID_MAP } from '../support/liquidMap';
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = import.meta.env.BASE_URL || '/';
 
 // Dữ liệu Icon bar
 const iconData = [
@@ -21,7 +21,7 @@ const LIQUID_CONFIG = {
 const computedSVG_X = ((1 - LIQUID_CONFIG.scale) / 2) + LIQUID_CONFIG.offsetX;
 const computedSVG_Y = ((1 - LIQUID_CONFIG.scale) / 2) + LIQUID_CONFIG.offsetY;
 
-const IconBar = () => {
+const IconBar = ({ onMusicClick }) => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
   return (
@@ -69,6 +69,7 @@ const IconBar = () => {
             <div 
               key={item.name} 
               onMouseEnter={() => setHoveredIndex(index)}
+              onClick={() => {if(item.name === "Music" && onMusicClick){onMusicClick()}}}
               className={`flex flex-col items-center justify-center cursor-pointer transition-all ${durationClass} ${scaleClass}`}
             >
               <img src={item.src} alt={item.name} draggable="false" className="w-12 h-12 object-contain" />

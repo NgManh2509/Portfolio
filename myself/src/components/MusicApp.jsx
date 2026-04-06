@@ -1,7 +1,7 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import musicData from '../data/musicData';
 
-export default function ExploreScroll({ onPlaySong }) {
+const ExploreScroll = forwardRef(function ExploreScroll({ onPlaySong, isOpen, onClose, onPlayStateChange }, ref) {
   const scrollRef = useRef(null);
   const itemsRef = useRef([]);
   const requestRef = useRef();
@@ -9,6 +9,29 @@ export default function ExploreScroll({ onPlaySong }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingId, setPlayingId] = useState(null);
   const audioRef = useRef(null);
+
+  // Expose control methods to parent via ref
+  useImperativeHandle(ref, () => ({
+    playExternal(song) {
+      setPlayingId(song.id);
+      setIsPlaying(true);
+      if (onPlaySong) onPlaySong(song);
+      if (onPlayStateChange) onPlayStateChange(song, true);
+    },
+    togglePlay(song, forcedState) {
+      if (song && playingId !== song.id) {
+        setPlayingId(song.id);
+        setIsPlaying(true);
+        if (onPlaySong) onPlaySong(song);
+        if (onPlayStateChange) onPlayStateChange(song, true);
+      } else {
+        const next = forcedState !== undefined ? forcedState : !isPlaying;
+        setIsPlaying(next);
+        const currentSong = musicData.find(s => s.id === playingId);
+        if (onPlayStateChange && currentSong) onPlayStateChange(currentSong, next);
+      }
+    },
+  }));
 
   useEffect(() => {
     if (audioRef.current && playingId) {
@@ -23,11 +46,14 @@ export default function ExploreScroll({ onPlaySong }) {
   const handlePlayToggle = (e, song) => {
     e.stopPropagation();
     if (playingId === song.id) {
-      setIsPlaying(!isPlaying);
+      const next = !isPlaying;
+      setIsPlaying(next);
+      if (onPlayStateChange) onPlayStateChange(song, next);
     } else {
       setPlayingId(song.id);
       setIsPlaying(true);
       if (onPlaySong) onPlaySong(song);
+      if (onPlayStateChange) onPlayStateChange(song, true);
     }
   };
 
@@ -42,6 +68,7 @@ export default function ExploreScroll({ onPlaySong }) {
       setPlayingId(nextSong.id);
       setIsPlaying(true);
       if (onPlaySong) onPlaySong(nextSong);
+      if (onPlayStateChange) onPlayStateChange(nextSong, true);
       
       // Tự động cuộn đến bài tiếp theo cho mượt
       if (scrollRef.current && itemsRef.current[nextIndex]) {
@@ -115,7 +142,14 @@ export default function ExploreScroll({ onPlaySong }) {
   }, [calculateScroll]);
 
   return (
-    <div className="fixed left-[120px] top-[36.5%] -translate-y-1/2 z-40 font-['Lato',_sans-serif] antialiased">
+    <div className={`
+        fixed left-[120px] top-[36.5%] -translate-y-1/2 z-40 font-['Lato',_sans-serif] antialiased
+        /* Thêm Animation classes ở đây */
+        transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) origin-left
+        ${isOpen 
+          ? 'opacity-100 scale-100 translate-x-0 pointer-events-auto visible' 
+          : 'opacity-0 scale-95 -translate-x-12 pointer-events-none invisible'}
+      `}>
       {/* Cài đặt CSS ẩn thanh cuộn (vì Tailwind mặc định không có utilities này) */}
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -126,7 +160,7 @@ export default function ExploreScroll({ onPlaySong }) {
       <div className="w-[500px] h-[600px] bg-[#F4F4F9] rounded-[15px] shadow-[0_25px_50px_rgba(0,0,0,0.15),inset_0_0_0_6px_#fff] flex flex-col overflow-hidden relative">
         <audio 
           ref={audioRef} 
-          src={playingId ? musicData.find(s => s.id === playingId)?.musicSrc : ''} 
+          src={playingId ? musicData.find(s => s.id === playingId)?.musicSrc : undefined} 
           onEnded={handleSongEnded} 
         />
         
@@ -135,7 +169,15 @@ export default function ExploreScroll({ onPlaySong }) {
           <h1 className="font-['Playfair_Display',_serif] text-[32px] font-extrabold text-[#111] tracking-[-0.5px]">
             Explore
           </h1>
-          <div className="text-[24px] font-bold text-[#111] tracking-[2px] cursor-pointer">•••</div>
+          <button
+            onClick={onClose}
+            className="flex items-center justify-center w-9 h-9 rounded-full bg-[#F4F4F9] hover:bg-black/10 transition-colors duration-200 cursor-pointer"
+            aria-label="Close music player"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-[#111]">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
         </div>
 
         {/* Scroll Area */}
@@ -180,12 +222,26 @@ export default function ExploreScroll({ onPlaySong }) {
                     </div>
 
                     {/* Nút Play (Thu phóng dựa vào thẻ bao bọc ngoài) */}
-                    <div className={`overflow-hidden transition-all duration-300 ease-out flex items-center ${isActive ? 'w-[85px] opacity-100 ml-3' : 'w-0 opacity-0 ml-0'}`}>
+                    <div className={`overflow-hidden transition-all duration-300 ease-out flex items-center ${isActive ? 'w-[105px] opacity-100 ml-3' : 'w-0 opacity-0 ml-0'}`}>
                       <button 
                         onClick={(e) => handlePlayToggle(e, song)}
-                        className="bg-white text-[#111] border-none rounded-[30px] py-[10px] px-[22px] font-['Lato',_sans-serif] text-[13px] font-bold uppercase tracking-[1px] cursor-pointer shadow-[0_4px_12px_rgba(0,0,0,0.08)] whitespace-nowrap"
+                        className="group relative flex items-center justify-center gap-[6px] bg-gradient-to-r from-[#1a1a1a] to-[#3a3a3a] text-white border-none rounded-[30px] py-[10px] px-[18px] font-['Lato',_sans-serif] text-[12px] font-extrabold uppercase tracking-[1px] cursor-pointer hover:from-[#111] hover:to-[#222] transition-all duration-300 ease-out active:scale-95 active:translate-y-0 whitespace-nowrap"
                       >
-                        {playingId === song.id && isPlaying ? 'Pause' : 'Play'}
+                        {playingId === song.id && isPlaying ? (
+                          <>
+                            <svg className="w-[12px] h-[12px] text-[#ff4d4d] animate-pulse" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                            </svg>
+                            <span>Pause</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-[12px] h-[12px] group-hover:text-[#1dd1a1] transition-colors duration-300 group-hover:scale-110" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                            <span>Play</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -197,4 +253,6 @@ export default function ExploreScroll({ onPlaySong }) {
       </div>
     </div>
   );
-}
+});
+
+export default ExploreScroll;
