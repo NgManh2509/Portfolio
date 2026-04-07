@@ -21,7 +21,7 @@ const LIQUID_CONFIG = {
 const computedSVG_X = ((1 - LIQUID_CONFIG.scale) / 2) + LIQUID_CONFIG.offsetX;
 const computedSVG_Y = ((1 - LIQUID_CONFIG.scale) / 2) + LIQUID_CONFIG.offsetY;
 
-const IconBar = ({ onMusicClick }) => {
+const IconBar = ({ onMusicClick, onLinkClick }) => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
   return (
@@ -33,7 +33,7 @@ const IconBar = ({ onMusicClick }) => {
           fixed left-[20px] top-[25%] -translate-y-1/2 z-50 
           flex flex-col gap-3 items-center 
           border-2 border-transparent
-          bg-white/[0.08] rounded-[15px] px-4 py-6
+          bg-white/[0.08] rounded-[5px] px-4 py-6
           shadow-[0_0_0_2px_rgba(255,255,255,0.6),0_16px_32px_rgba(0,0,0,0.12)]
         "
         style={{ 
@@ -69,7 +69,10 @@ const IconBar = ({ onMusicClick }) => {
             <div 
               key={item.name} 
               onMouseEnter={() => setHoveredIndex(index)}
-              onClick={() => {if(item.name === "Music" && onMusicClick){onMusicClick()}}}
+              onClick={() => {
+                if (item.name === "Music" && onMusicClick) onMusicClick();
+                if (item.name === "Link"  && onLinkClick)  onLinkClick();
+              }}
               className={`flex flex-col items-center justify-center cursor-pointer transition-all ${durationClass} ${scaleClass}`}
             >
               <img src={item.src} alt={item.name} draggable="false" className="w-12 h-12 object-contain" />

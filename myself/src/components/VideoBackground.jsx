@@ -1,16 +1,38 @@
 import React, { useRef, useEffect } from 'react'
 
-const VideoBackground = ({ videoUrl, fallbackImage }) => {
+const VideoBackground = ({ videoUrl, fallbackImage, onReady }) => {
     const videoRef = useRef(null)
 
     useEffect(() => {
+        // Không có video → báo sẵn sàng ngay để nhạc không bị block
+        if (!videoUrl) {
+            onReady?.();
+            return;
+        }
+
         const video = videoRef.current;
-        if(!video || !videoUrl) return;
-        
+        if (!video) return;
+
+        // Reset về chưa sẵn sàng mỗi khi đổi bài
+        let settled = false;
+
+        const markReady = () => {
+            if (settled) return;
+            settled = true;
+            onReady?.();
+        };
+
+        // Fallback: sau 5 giây nếu video vẫn chưa load xong thì vẫn cho play nhạc
+        const fallbackTimer = setTimeout(markReady, 5000);
+
         video.src = videoUrl;
-        video.play().catch(() => {
-            console.log("autoplay prevented")
-        })
+        video.addEventListener('canplaythrough', markReady, { once: true });
+        video.play().catch(() => console.log('autoplay prevented'));
+
+        return () => {
+            clearTimeout(fallbackTimer);
+            video.removeEventListener('canplaythrough', markReady);
+        };
     }, [videoUrl])
   return (
     <div className='fixed inset-0 -z-10'>

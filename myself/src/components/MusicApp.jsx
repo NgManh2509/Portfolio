@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import musicData from '../data/musicData';
 
-const ExploreScroll = forwardRef(function ExploreScroll({ onPlaySong, isOpen, onClose, onPlayStateChange }, ref) {
+const ExploreScroll = forwardRef(function ExploreScroll({ onPlaySong, isOpen, onClose, onPlayStateChange, canPlay }, ref) {
   const scrollRef = useRef(null);
   const itemsRef = useRef([]);
   const requestRef = useRef();
@@ -33,15 +33,16 @@ const ExploreScroll = forwardRef(function ExploreScroll({ onPlaySong, isOpen, on
     },
   }));
 
+  // Play/Pause audio — chỉ play khi video đã sẵn sàng (canPlay === true)
   useEffect(() => {
     if (audioRef.current && playingId) {
-      if (isPlaying) {
+      if (isPlaying && canPlay) {
         audioRef.current.play().catch(e => console.log("Audio play failed:", e));
       } else {
         audioRef.current.pause();
       }
     }
-  }, [playingId, isPlaying]);
+  }, [playingId, isPlaying, canPlay]);
 
   const handlePlayToggle = (e, song) => {
     e.stopPropagation();
@@ -157,7 +158,7 @@ const ExploreScroll = forwardRef(function ExploreScroll({ onPlaySong, isOpen, on
       `}</style>
 
       {/* Khung điện thoại */}
-      <div className="w-[500px] h-[600px] bg-[#F4F4F9] rounded-[15px] shadow-[0_25px_50px_rgba(0,0,0,0.15),inset_0_0_0_6px_#fff] flex flex-col overflow-hidden relative">
+      <div className="w-[500px] h-[600px] bg-[#F4F4F9] rounded-[5px] shadow-[0_25px_50px_rgba(0,0,0,0.15),inset_0_0_0_6px_#fff] flex flex-col overflow-hidden relative">
         <audio 
           ref={audioRef} 
           src={playingId ? musicData.find(s => s.id === playingId)?.musicSrc : undefined} 

@@ -4,15 +4,18 @@ import VideoBackground from './components/VideoBackground'
 import IconBar from './components/IconBar'
 import MusicApp from './components/MusicApp'
 import MiniPlayer from './components/MiniPlayer'
+import LinkModal from './components/linkModal'
 import defaultBg from './assets/firstbg.webp'
 import musicData from './data/musicData'
 
 function App() {
   const [videoUrl, setVideoUrl] = useState(null);
   const [isMusicOpen, setIsMusicOpen] = useState(false);
+  const [isLinkOpen, setIsLinkOpen] = useState(false);
   const [playingSong, setPlayingSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMiniVisible, setIsMiniVisible] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
   const musicAppRef = useRef(null);
 
   const handleMusicClick = () => {
@@ -49,14 +52,26 @@ function App() {
 
   return (
     <>
-      <VideoBackground videoUrl={videoUrl} fallbackImage={defaultBg} />
-      <IconBar onMusicClick={handleMusicClick} />
+      <VideoBackground
+        videoUrl={videoUrl}
+        fallbackImage={defaultBg}
+        onReady={() => setIsVideoReady(true)}
+      />
+      <IconBar
+        onMusicClick={handleMusicClick}
+        onLinkClick={() => setIsLinkOpen(prev => !prev)}
+      />
+      <LinkModal isOpen={isLinkOpen} onClose={() => setIsLinkOpen(false)} />
       <MusicApp
         ref={musicAppRef}
-        onPlaySong={(song) => setVideoUrl(song.videoSrc)}
+        onPlaySong={(song) => {
+          setIsVideoReady(false); // reset mỗi khi đổi bài
+          setVideoUrl(song.videoSrc);
+        }}
         isOpen={isMusicOpen}
         onClose={handleMusicClick}
         onPlayStateChange={handlePlayStateChange}
+        canPlay={isVideoReady}
       />
       <MiniPlayer
         song={playingSong}
