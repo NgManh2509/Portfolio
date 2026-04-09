@@ -151,14 +151,11 @@ const ExploreScroll = forwardRef(function ExploreScroll({ onPlaySong, isOpen, on
           ? 'opacity-100 scale-100 translate-x-0 pointer-events-auto visible' 
           : 'opacity-0 scale-95 -translate-x-12 pointer-events-none invisible'}
       `}>
-      {/* Cài đặt CSS ẩn thanh cuộn (vì Tailwind mặc định không có utilities này) */}
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
-
-      {/* Khung điện thoại */}
-      <div className="w-[500px] h-[600px] bg-[#F4F4F9] rounded-[5px] shadow-[0_25px_50px_rgba(0,0,0,0.15),inset_0_0_0_6px_#fff] flex flex-col overflow-hidden relative">
+      <div className="w-[520px] h-[600px] bg-[#F4F4F9] rounded-[5px] shadow-[0_25px_50px_rgba(0,0,0,0.15),inset_0_0_0_6px_#fff] flex flex-col overflow-hidden relative">
         <audio 
           ref={audioRef} 
           src={playingId ? musicData.find(s => s.id === playingId)?.musicSrc : undefined} 
