@@ -1,0 +1,38 @@
+@keyframes subtleReveal {
+    0% { opacity: 0; transform: translateY(16px); filter: blur(3px); }
+    100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes stampPress {
+    0% { opacity: 0; transform: scale(1.6) rotate(-10deg); }
+    50% { opacity: 1; transform: scale(0.9) rotate(5deg); }
+    100% { opacity: 0.85; transform: scale(1) rotate(0deg); }
+}
+
+.profile-card-animate{
+    animation: subtleReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.1s;
+}
+
+/* Scrollbar — tinh tế như nét bút mực */
+.profile-card-content {
+    scrollbar-width: thin;
+    scrollbar-color: #D5D1C8 transparent;
+}
+
+.profile-card-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.profile-card-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.profile-card-content::-webkit-scrollbar-thumb {
+    background: #D5D1C8;
+    border-radius: 2px;
+    transition: background 0.2s ease;
+}
+
+.profile-card-content::-webkit-scrollbar-thumb:hover {
+    background: #73716A;
+}

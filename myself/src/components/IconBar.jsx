@@ -5,8 +5,8 @@ const BASE = import.meta.env.BASE_URL || '/';
 
 // Dữ liệu Icon bar
 const iconData = [
-    { name: "About", src :`${BASE}useIcon/aboutIcon.svg` },
-    { name: "Contact", src :`${BASE}useIcon/contactIcon.svg` },
+    { name: "About", src :`${BASE}useIcon/contactIcon.svg` },
+    { name: "Work", src :`${BASE}useIcon/aboutIcon.svg` },
     { name: "Link", src :`${BASE}useIcon/linkIcon.svg` },
     { name: "Music", src :`${BASE}useIcon/musicIcon.svg` },
 ]
@@ -21,7 +21,7 @@ const LIQUID_CONFIG = {
 const computedSVG_X = ((1 - LIQUID_CONFIG.scale) / 2) + LIQUID_CONFIG.offsetX;
 const computedSVG_Y = ((1 - LIQUID_CONFIG.scale) / 2) + LIQUID_CONFIG.offsetY;
 
-const IconBar = ({ onMusicClick, onLinkClick }) => {
+const IconBar = ({ onMusicClick, onLinkClick, onAboutClick, onWorkClick }) => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
   return (
@@ -72,6 +72,8 @@ const IconBar = ({ onMusicClick, onLinkClick }) => {
               onClick={() => {
                 if (item.name === "Music" && onMusicClick) onMusicClick();
                 if (item.name === "Link"  && onLinkClick)  onLinkClick();
+                if (item.name === "About" && onAboutClick) onAboutClick();
+                if (item.name === "Work"  && onWorkClick)  onWorkClick();
               }}
               className={`flex flex-col items-center justify-center cursor-pointer transition-all ${durationClass} ${scaleClass}`}
             >

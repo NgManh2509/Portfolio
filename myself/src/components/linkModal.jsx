@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 const BASE = import.meta.env.BASE_URL || '/';
 
 const links = [
-  { name: 'YouTube',   src: `${BASE}useIcon/youtube-svgrepo-com.svg`,     href: 'https://www.youtube.com/@mxnheditnquvcer' },
-  { name: 'Discord',   src: `${BASE}useIcon/discord-icon-svgrepo-com.svg`, href: 'https://discord.gg/MdVa9Kn7' },
-  { name: 'Instagram', src: `${BASE}useIcon/instagram-1-svgrepo-com.svg`,  href: 'https://www.instagram.com/il.manh/' },
-  { name: 'Threads',   src: `${BASE}useIcon/threads-seeklogo-4.svg`,        href: 'https://www.threads.com/@ill.moka2509?hl=vi' },
-  { name: 'GitHub',    src: `${BASE}useIcon/github-svgrepo-com.svg`,        href: 'https://github.com/NgManh2509' },
-  { name: 'Facebook',  src: `${BASE}useIcon/facebook-svgrepo-com.svg`,      href: 'https://web.facebook.com/ng.manh2509' },
+  { name: 'ng.manh',   src: `${BASE}useIcon/youtube-svgrepo-com.svg`,     href: 'https://www.youtube.com/@mxnheditnquvcer' },
+  { name: 'ng.manh2509',   src: `${BASE}useIcon/discord-icon-svgrepo-com.svg`, href: 'https://discord.gg/MdVa9Kn7' },
+  { name: 'il.manh', src: `${BASE}useIcon/instagram-1-svgrepo-com.svg`,  href: 'https://www.instagram.com/il.manh/' },
+  { name: 'ill.moka2509',   src: `${BASE}useIcon/threads-seeklogo-4.svg`,        href: 'https://www.threads.com/@ill.moka2509?hl=vi' },
+  { name: 'NgManh2509',    src: `${BASE}useIcon/github-svgrepo-com.svg`,        href: 'https://github.com/NgManh2509' },
+  { name: 'Nguyễn Mạnh',  src: `${BASE}useIcon/facebook-svgrepo-com.svg`,      href: 'https://web.facebook.com/ng.manh2509' },
 ];
 
 const LinkModal = ({ isOpen, onClose }) => {

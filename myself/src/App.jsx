@@ -6,10 +6,13 @@ import MusicApp from './components/MusicApp'
 import MiniPlayer from './components/MiniPlayer'
 import LinkModal from './components/linkModal'
 import defaultBg from './assets/firstbg.webp'
+import ProfileCard from './components/profileCard'
 import musicData from './data/musicData'
+import WorkModal from './components/workModal'
 
 function App() {
   const [videoUrl, setVideoUrl] = useState(null);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isMusicOpen, setIsMusicOpen] = useState(false);
   const [isLinkOpen, setIsLinkOpen] = useState(false);
   const [playingSong, setPlayingSong] = useState(null);
@@ -17,6 +20,7 @@ function App() {
   const [isMiniVisible, setIsMiniVisible] = useState(false);
   const [isVideoReady, setIsVideoReady] = useState(false);
   const musicAppRef = useRef(null);
+  const [isWorkOpen, setIsWorkOpen] = useState(false);
 
   const handleMusicClick = () => {
     setIsMusicOpen(prev => !prev);
@@ -52,6 +56,7 @@ function App() {
 
   return (
     <>
+      <WorkModal isOpen={isWorkOpen} onClose={() => setIsWorkOpen(false)} />
       <VideoBackground
         videoUrl={videoUrl}
         fallbackImage={defaultBg}
@@ -60,7 +65,10 @@ function App() {
       <IconBar
         onMusicClick={handleMusicClick}
         onLinkClick={() => setIsLinkOpen(prev => !prev)}
+        onAboutClick={() => setIsAboutOpen(prev => !prev)}
+        onWorkClick={() => setIsWorkOpen(prev => !prev)}
       />
+      <ProfileCard isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
       <LinkModal isOpen={isLinkOpen} onClose={() => setIsLinkOpen(false)} />
       <MusicApp
         ref={musicAppRef}

@@ -1,4 +1,3 @@
-const BASE = import.meta.env.BASE_URL;
 const musicData = [
     {
         id:'ms01',
