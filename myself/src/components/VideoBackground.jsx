@@ -40,7 +40,6 @@ const VideoBackground = ({ videoUrl, fallbackImage, onReady }) => {
         const startPlayback = async () => {
             try {
                 await video.play();
-
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 sourceNode = audioCtx.createMediaElementSource(video);
                 sourceNode.connect(audioCtx.destination);

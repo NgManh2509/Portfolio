@@ -139,7 +139,7 @@ const MiniPlayer = ({ song, isPlaying, isVisible, onPlayPause, onPrev, onNext })
                       else setIsMinimized(true);
                     }}
                     title={isControls ? 'Back' : 'Minimize'}
-                    whileHover={{ scale: 1.12, backgroundColor: 'rgba(255,255,255,0.65)' }}
+                    whileHover={{ scale: 1.12, backgroundColor: 'rgba(255,255,255,0.06)' }}
                     whileTap={{ scale: 0.88 }}
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                     style={{

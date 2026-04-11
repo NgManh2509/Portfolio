@@ -94,7 +94,7 @@ function App() {
         }}
       />
 
-      <main className="relative z-10 flex min-h-screen flex-col items-center justify-center p-4 ml-[200px]">
+      <main className="relative z-10 flex min-h-screen flex-col items-center justify-center p-4 md:ml-[200px] pb-[72px] md:pb-4">
       </main>
     </>
   )

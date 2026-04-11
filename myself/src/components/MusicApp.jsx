@@ -1,5 +1,17 @@
 import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
+import { ChevronDown, ChevronLeft } from 'lucide-react';
 import musicData from '../data/musicData';
+
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+};
 
 const ExploreScroll = forwardRef(function ExploreScroll({ onPlaySong, isOpen, onClose, onPlayStateChange, canPlay }, ref) {
   const scrollRef = useRef(null);
@@ -9,8 +21,8 @@ const ExploreScroll = forwardRef(function ExploreScroll({ onPlaySong, isOpen, on
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingId, setPlayingId] = useState(null);
   const audioRef = useRef(null);
+  const isMobile = useIsMobile();
 
-  // Expose control methods to parent via ref
   useImperativeHandle(ref, () => ({
     playExternal(song) {
       setPlayingId(song.id);
@@ -33,7 +45,6 @@ const ExploreScroll = forwardRef(function ExploreScroll({ onPlaySong, isOpen, on
     },
   }));
 
-  // Play/Pause audio — chỉ play khi video đã sẵn sàng (canPlay === true)
   useEffect(() => {
     if (audioRef.current && playingId) {
       if (isPlaying && canPlay) {
@@ -62,16 +73,12 @@ const ExploreScroll = forwardRef(function ExploreScroll({ onPlaySong, isOpen, on
     const currentIndex = musicData.findIndex(s => s.id === playingId);
     if (currentIndex !== -1) {
       let nextIndex = currentIndex + 1;
-      if (nextIndex >= musicData.length) {
-        nextIndex = 0; // Quay lại bài đầu tiên nếu đã hết danh sách
-      }
+      if (nextIndex >= musicData.length) nextIndex = 0;
       const nextSong = musicData[nextIndex];
       setPlayingId(nextSong.id);
       setIsPlaying(true);
       if (onPlaySong) onPlaySong(nextSong);
       if (onPlayStateChange) onPlayStateChange(nextSong, true);
-      
-      // Tự động cuộn đến bài tiếp theo cho mượt
       if (scrollRef.current && itemsRef.current[nextIndex]) {
         const targetItem = itemsRef.current[nextIndex];
         const itemCenter = targetItem.offsetTop + targetItem.offsetHeight / 2;
@@ -87,52 +94,39 @@ const ExploreScroll = forwardRef(function ExploreScroll({ onPlaySong, isOpen, on
 
   const calculateScroll = useCallback(() => {
     if (!scrollRef.current) return;
-    
     const scrollArea = scrollRef.current;
     const scrollRect = scrollArea.getBoundingClientRect();
     const containerCenter = scrollRect.top + scrollRect.height / 2;
     const maxDistance = scrollRect.height / 1.5;
-
     let closestIdx = 0;
     let minDistance = Infinity;
-
     itemsRef.current.forEach((item, index) => {
       if (!item) return;
       const itemRect = item.getBoundingClientRect();
       const itemCenter = itemRect.top + itemRect.height / 2;
       const deltaY = itemCenter - containerCenter;
-
       let ratio = deltaY / maxDistance;
       ratio = Math.max(-1, Math.min(1, ratio));
-
-      // Toán học tính toán Arc Parabola
-      const maxOffsetX = 180;
+      const maxOffsetX = isMobile ? 80 : 180;
       const translateX = Math.pow(ratio, 2) * maxOffsetX;
       const opacity = 1 - Math.abs(ratio) * 0.85;
       const scale = 1 - Math.abs(ratio) * 0.12;
-
-      // Cập nhật DOM trực tiếp để đạt 60 FPS, không thông qua React State
       item.style.transform = `translateX(${translateX}px) scale(${scale})`;
       item.style.opacity = opacity;
-
       if (Math.abs(deltaY) < minDistance) {
         minDistance = Math.abs(deltaY);
         closestIdx = index;
       }
     });
-
-    // Chỉ trigger re-render khi index focus thực sự thay đổi
     setActiveIndex((prev) => (prev !== closestIdx ? closestIdx : prev));
-  }, []);
+  }, [isMobile]);
 
   const handleScroll = () => {
-    // Dùng requestAnimationFrame để tối ưu hóa sự kiện cuộn
     if (requestRef.current) cancelAnimationFrame(requestRef.current);
     requestRef.current = requestAnimationFrame(calculateScroll);
   };
 
   useEffect(() => {
-    // Scroll mặc định tới bài hát "Day light" (Index 3)
     if (scrollRef.current && itemsRef.current[3]) {
       const targetItem = itemsRef.current[3];
       const itemCenter = targetItem.offsetTop + targetItem.offsetHeight / 2;
@@ -142,114 +136,187 @@ const ExploreScroll = forwardRef(function ExploreScroll({ onPlaySong, isOpen, on
     return () => cancelAnimationFrame(requestRef.current);
   }, [calculateScroll]);
 
+  // ── Một tree duy nhất, style thay đổi theo isMobile ──────────────────────
   return (
-    <div className={`
-        fixed left-[120px] top-[36.5%] -translate-y-1/2 z-40 font-['Lato',_sans-serif] antialiased
-        /* Thêm Animation classes ở đây */
-        transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) origin-left
-        ${isOpen 
-          ? 'opacity-100 scale-100 translate-x-0 pointer-events-auto visible' 
-          : 'opacity-0 scale-95 -translate-x-12 pointer-events-none invisible'}
-      `}>
+    <>
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
-      <div className="w-[520px] h-[600px] bg-[#F4F4F9] rounded-[5px] shadow-[0_25px_50px_rgba(0,0,0,0.15),inset_0_0_0_6px_#fff] flex flex-col overflow-hidden relative">
-        <audio 
-          ref={audioRef} 
-          src={playingId ? musicData.find(s => s.id === playingId)?.musicSrc : undefined} 
-          onEnded={handleSongEnded} 
-        />
-        
-        {/* Header */}
-        <div className="flex justify-between items-center pt-4 pb-[10px] px-[30px] z-10">
-          <h1 className="font-['Playfair_Display',_serif] text-[32px] font-extrabold text-[#111] tracking-[-0.5px]">
-            Explore
-          </h1>
-          <button
-            onClick={onClose}
-            className="flex items-center justify-center w-9 h-9 rounded-full bg-[#F4F4F9] hover:bg-black/10 transition-colors duration-200 cursor-pointer"
-            aria-label="Close music player"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-[#111]">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-        </div>
 
-        {/* Scroll Area */}
+      {/* Backdrop — chỉ hiện trên mobile */}
+      <div
+        className="fixed inset-0 z-40 transition-opacity duration-400 pointer-events-none"
+        style={{
+          background: 'rgba(0,0,0,0.45)',
+          backdropFilter: 'blur(4px)',
+          opacity: isMobile && isOpen ? 1 : 0,
+          pointerEvents: isMobile && isOpen ? 'auto' : 'none',
+        }}
+        onClick={onClose}
+      />
+
+      {/* Panel chính */}
+      <div
+        className="fixed z-50 font-['Lato',_sans-serif] antialiased"
+        style={isMobile ? {
+          // Mobile: bottom sheet
+          left: 0, right: 0, bottom: 0, top: 'auto',
+          transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
+          transition: `transform 500ms ${isOpen ? 'cubic-bezier(0.32,0.72,0,1)' : 'cubic-bezier(0.4,0,1,1)'}`,
+        } : {
+          // Desktop: left panel  
+          left: '120px',
+          top: '50%',
+          transform: isOpen
+            ? 'translateY(-50%) translateX(0) scale(1)'
+            : 'translateY(-50%) translateX(-48px) scale(0.95)',
+          opacity: isOpen ? 1 : 0,
+          pointerEvents: isOpen ? 'auto' : 'none',
+          visibility: isOpen ? 'visible' : 'hidden',
+          transition: 'transform 500ms cubic-bezier(0.4,0,0.2,1), opacity 500ms cubic-bezier(0.4,0,0.2,1)',
+          transformOrigin: 'left center',
+        }}
+      >
+        {/* Card */}
         <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth hide-scrollbar"
-          style={{
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,1) 15%, rgba(0,0,0,1) 85%, transparent 100%)',
-            maskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,1) 15%, rgba(0,0,0,1) 85%, transparent 100%)',
+          className="bg-[#F4F4F9] flex flex-col overflow-hidden relative"
+          style={isMobile ? {
+            borderRadius: '15px 15px 0 0',
+            boxShadow: '0 -20px 60px rgba(0,0,0,0.25), inset 0 0 0 5px #fff',
+            maxHeight: 'calc(90vh - env(safe-area-inset-bottom, 0px))',
+            paddingBottom: 'env(safe-area-inset-bottom, 12px)',
+            width: '100%',
+          } : {
+            borderRadius: '5px',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.15), inset 0 0 0 6px #fff',
+            width: 'min(520px, calc(100vw - 160px))',
+            height: 'min(600px, calc(100vh - 40px))',
           }}
         >
-          <div className="py-[350px] flex flex-col gap-3">
-            {musicData.map((song, index) => {
-              const isActive = activeIndex === index;
-              return (
-                <div
-                  key={index}
-                  ref={(el) => (itemsRef.current[index] = el)}
-                  className="flex justify-start pl-5 w-full transition-opacity duration-100 ease-out will-change-transform"
-                >
-                  {/* Nội dung Item chuyển đổi bằng Tailwind Group & Logic */}
-                  <div className={`flex items-center p-2 rounded-[60px] transition-all duration-300 ease-out ${isActive ? 'bg-white/98 shadow-[0_15px_40px_rgba(0,0,0,0.04)] pr-[18px] scale-[1.03]' : 'bg-transparent'}`}>
-                    
-                    {/* Ảnh Cover */}
-                    <div className="relative z-10">
-                      <img
-                        src={song.coverSrc}
-                        alt={song.title}
-                        className={`rounded-full object-cover transition-all duration-300 ease-out ${isActive ? 'w-[95px] h-[95px] grayscale-0 shadow-[0_15px_25px_rgba(0,0,0,0.1)]' : 'w-[85px] h-[85px] grayscale shadow-[0_10px_20px_rgba(0,0,0,0.08)]'}`}
-                      />
-                    </div>
+          {/* Audio — KHÔNG bao giờ unmount */}
+          <audio
+            ref={audioRef}
+            src={playingId ? musicData.find(s => s.id === playingId)?.musicSrc : undefined}
+            onEnded={handleSongEnded}
+          />
 
-                    {/* Thông tin bài hát */}
-                    <div className="flex flex-col ml-[18px] min-w-[120px]">
-                      <div className={`font-['Playfair_Display',_serif] text-[20px] leading-[1.2] transition-colors duration-300 ease-out ${isActive ? 'text-[#111] font-bold' : 'text-[#999] font-bold'}`}>
-                        {song.title}
-                      </div>
-                      <div className={`font-['Lato',_sans-serif] text-[14px] mt-[5px] transition-colors duration-300 ease-out ${isActive ? 'text-[#555] font-normal' : 'text-[#bbb] font-light'}`}>
-                        {song.artist}
-                      </div>
-                    </div>
+          {/* Drag handle — chỉ mobile */}
+          {isMobile && (
+            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+              <div className="w-10 h-[4px] rounded-full bg-black/15" />
+            </div>
+          )}
 
-                    {/* Nút Play (Thu phóng dựa vào thẻ bao bọc ngoài) */}
-                    <div className={`overflow-hidden transition-all duration-300 ease-out flex items-center ${isActive ? 'w-[105px] opacity-100 ml-3' : 'w-0 opacity-0 ml-0'}`}>
-                      <button 
-                        onClick={(e) => handlePlayToggle(e, song)}
-                        className="group relative flex items-center justify-center gap-[6px] bg-gradient-to-r from-[#1a1a1a] to-[#3a3a3a] text-white border-none rounded-[30px] py-[10px] px-[18px] font-['Lato',_sans-serif] text-[12px] font-extrabold uppercase tracking-[1px] cursor-pointer hover:from-[#111] hover:to-[#222] transition-all duration-300 ease-out active:scale-95 active:translate-y-0 whitespace-nowrap"
+          {/* Header */}
+          <div className="flex justify-between items-center z-10 flex-shrink-0"
+            style={{ padding: isMobile ? '8px 24px 8px' : '16px 30px 10px' }}
+          >
+            <h1 className="font-['Playfair_Display',_serif] font-extrabold text-[#111] tracking-[-0.5px]"
+              style={{ fontSize: isMobile ? '26px' : '32px' }}
+            >
+              Explore
+            </h1>
+            <button
+              onClick={onClose}
+              className="flex items-center justify-center w-9 h-9 rounded-full transition-colors duration-200 cursor-pointer"
+              style={{ background: 'transparent' }}
+              aria-label="Close music player"
+            >
+              {isMobile ? (
+                <ChevronDown className="w-5 h-5 text-[#111]" strokeWidth={2.5} />
+              ) : (
+                <ChevronLeft className="w-5 h-5 text-[#111]" strokeWidth={2.5} />
+              )}
+            </button>
+          </div>
+
+          {/* Scroll Area */}
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth hide-scrollbar min-h-0"
+            style={{
+              WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,1) 15%, rgba(0,0,0,1) 85%, transparent 100%)',
+              maskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,1) 15%, rgba(0,0,0,1) 85%, transparent 100%)',
+            }}
+          >
+            <div className="flex flex-col gap-3"
+              style={{ padding: isMobile ? '220px 0' : '350px 0' }}
+            >
+              {musicData.map((song, index) => {
+                const isActive = activeIndex === index;
+                const imgActive = isMobile ? 78 : 95;
+                const imgInactive = isMobile ? 70 : 85;
+                return (
+                  <div
+                    key={index}
+                    ref={(el) => (itemsRef.current[index] = el)}
+                    className="flex justify-start w-full transition-opacity duration-100 ease-out will-change-transform"
+                    style={{ paddingLeft: isMobile ? '16px' : '20px' }}
+                  >
+                    <div className={`flex items-center p-2 rounded-[60px] transition-all duration-300 ease-out ${isActive ? 'bg-white/98 shadow-[0_15px_40px_rgba(0,0,0,0.04)] scale-[1.03]' : 'bg-transparent'}`}
+                      style={{ paddingRight: isActive ? (isMobile ? '14px' : '18px') : '8px' }}
+                    >
+                      {/* Cover */}
+                      <div className="relative z-10 flex-shrink-0">
+                        <img
+                          src={song.coverSrc}
+                          alt={song.title}
+                          className={`rounded-full object-cover transition-all duration-300 ease-out ${isActive ? 'grayscale-0 shadow-[0_15px_25px_rgba(0,0,0,0.1)]' : 'grayscale shadow-[0_10px_20px_rgba(0,0,0,0.08)]'}`}
+                          style={{ width: isActive ? imgActive : imgInactive, height: isActive ? imgActive : imgInactive }}
+                        />
+                      </div>
+                      {/* Info */}
+                      <div className="flex flex-col"
+                        style={{ marginLeft: isMobile ? '12px' : '18px', minWidth: isMobile ? '100px' : '120px' }}
                       >
-                        {playingId === song.id && isPlaying ? (
-                          <>
-                            <svg className="w-[12px] h-[12px] text-[#ff4d4d] animate-pulse" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                            </svg>
-                            <span>Pause</span>
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-[12px] h-[12px] group-hover:text-[#1dd1a1] transition-colors duration-300 group-hover:scale-110" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M8 5v14l11-7z" />
-                            </svg>
-                            <span>Play</span>
-                          </>
-                        )}
-                      </button>
+                        <div className={`font-['Playfair_Display',_serif] leading-[1.2] transition-colors duration-300 ease-out font-bold ${isActive ? 'text-[#111]' : 'text-[#999]'}`}
+                          style={{ fontSize: isMobile ? '17px' : '20px' }}
+                        >
+                          {song.title}
+                        </div>
+                        <div className={`font-['Lato',_sans-serif] mt-[5px] transition-colors duration-300 ease-out ${isActive ? 'text-[#555] font-normal' : 'text-[#bbb] font-light'}`}
+                          style={{ fontSize: isMobile ? '12px' : '14px' }}
+                        >
+                          {song.artist}
+                        </div>
+                      </div>
+                      {/* Play button */}
+                      <div className={`overflow-hidden transition-all duration-300 ease-out flex items-center ${isActive ? 'opacity-100' : 'w-0 opacity-0'}`}
+                        style={{ width: isActive ? (isMobile ? '90px' : '105px') : 0, marginLeft: isActive ? (isMobile ? '8px' : '12px') : 0 }}
+                      >
+                        <button
+                          onClick={(e) => handlePlayToggle(e, song)}
+                          className="group relative flex items-center justify-center gap-[6px] bg-gradient-to-r from-[#1a1a1a] to-[#3a3a3a] text-white border-none rounded-[30px] font-['Lato',_sans-serif] font-extrabold uppercase tracking-[1px] cursor-pointer hover:from-[#111] hover:to-[#222] transition-all duration-300 ease-out active:scale-95 whitespace-nowrap"
+                          style={{ padding: isMobile ? '9px 14px' : '10px 18px', fontSize: isMobile ? '11px' : '12px' }}
+                        >
+                          {playingId === song.id && isPlaying ? (
+                            <>
+                              <svg className="w-[11px] h-[11px] text-[#ff4d4d] animate-pulse" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                              </svg>
+                              <span>Pause</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-[11px] h-[11px] group-hover:text-[#1dd1a1] transition-colors duration-300" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z" />
+                              </svg>
+                              <span>Play</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 });
 
