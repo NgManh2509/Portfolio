@@ -166,7 +166,7 @@ const ExploreScroll = forwardRef(function ExploreScroll({ onPlaySong, isOpen, on
           transition: `transform 500ms ${isOpen ? 'cubic-bezier(0.32,0.72,0,1)' : 'cubic-bezier(0.4,0,1,1)'}`,
         } : {
           // Desktop: left panel  
-          left: '120px',
+          left: '180px',
           top: '50%',
           transform: isOpen
             ? 'translateY(-50%) translateX(0) scale(1)'

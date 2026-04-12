@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { LIQUID_MAP } from '../support/liquidMap';
 
 const BASE = import.meta.env.BASE_URL || '/';
@@ -32,72 +33,94 @@ const LIQUID_CONFIG = {
 const computedSVG_X = ((1 - LIQUID_CONFIG.scale) / 2) + LIQUID_CONFIG.offsetX;
 const computedSVG_Y = ((1 - LIQUID_CONFIG.scale) / 2) + LIQUID_CONFIG.offsetY;
 
+function AppIcon({item, onMusicClick, onLinkClick, onAboutClick, onWorkClick, mouseY}){
+  let ref = useRef(null);
+
+  // Tính khoảng cách từ y của chuột đến tâm y của icon này
+  let distance = useTransform(mouseY, (val) => {
+    let bounds = ref.current?.getBoundingClientRect() ?? { y: 0, height: 0 };
+    return val - bounds.y - bounds.height / 2;
+  });
+
+  // Giữ lại scale nhún nhảy thần thánh của bạn
+  let scaleSync = useTransform(distance, [-200, 0, 200], [1, 2, 1]);
+  let scale = useSpring(scaleSync, { mass: 0.1, stiffness: 250, damping: 15 });
+  
+  // THEO ĐÚNG Ý BẠN: Chiều cao thủy tinh giãn nở ĐỒNG BỘ với ScaleSync! 
+  // Map từ giá trị scale (1x -> 2x) sang chiều cao vùng chứa (70px -> 140px)
+  let heightSync = useTransform(scaleSync, [1, 2], [70, 140]);
+  let dynamicHeight = useSpring(heightSync, { mass: 0.1, stiffness: 250, damping: 15 });
+
+  let zIndex = useTransform(scaleSync, (v) => Math.round(v * 10));
+
+  return (
+    <motion.div 
+        ref={ref}
+        style={{
+            height: dynamicHeight, 
+            width: 48, 
+            zIndex: zIndex,
+        }}
+        key={item.name} 
+        onClick={() => {
+            if (item.name === "Music" && onMusicClick) onMusicClick();
+            if (item.name === "Link"  && onLinkClick)  onLinkClick();
+            if (item.name === "About" && onAboutClick) onAboutClick();
+            if (item.name === "Work"  && onWorkClick)  onWorkClick();
+        }}
+        className="relative flex items-center justify-center cursor-pointer w-full"
+    >
+        <motion.div 
+            style={{ 
+                scale: scale,
+                originX: 0 
+            }}
+            className="absolute flex flex-col items-center justify-center pointer-events-none"
+        >
+            <img src={item.src} alt={item.name} draggable="false" className="w-12 h-12 object-contain drop-shadow-xl" />
+            <span className="text-xs mt-1 font-medium text-white select-none">{item.name}</span>
+        </motion.div>
+    </motion.div>
+  )
+}
+
 const IconBar = ({ onMusicClick, onLinkClick, onAboutClick, onWorkClick }) => {
-  const [hoveredIndex, setHoveredIndex] = useState(null);
+  let mouseY = useMotionValue(Infinity);
 
   const isMobile = useIsMobile();
 
   return (
     <>
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+
       {/* Desktop: vertical left sidebar */}
       {!isMobile && (
         <div 
+          onMouseMove={(e) => mouseY.set(e.clientY)}
+          onMouseLeave={() => mouseY.set(Infinity)}
           id="icon-bar-container"
-          onMouseLeave={() => setHoveredIndex(null)}
-          className="
+          className="no-scrollbar
             fixed left-[20px] top-1/2 -translate-y-1/2 z-50 
-            flex flex-col gap-3 items-center 
+            flex flex-col gap-0 items-center 
+            w-[64px]
             border-2 border-transparent
-            bg-white/[0.08] rounded-[5px] px-4 py-6
+            bg-white/[0.08] rounded-[5px] py-6
             shadow-[0_0_0_2px_rgba(255,255,255,0.6),0_16px_32px_rgba(0,0,0,0.12)]
-            max-h-[calc(100vh-40px)] overflow-y-auto
           "
           style={{ 
             backdropFilter: 'url(#liquid-frosted)', 
-            WebkitBackdropFilter: 'url(#liquid-frosted)' 
+            WebkitBackdropFilter: 'url(#liquid-frosted)',
+            msOverflowStyle: 'none',
+            scrollbarWidth: 'none',
           }}
         >
-          {iconData.map((item, index) => {
-            const distance = hoveredIndex !== null ? Math.abs(hoveredIndex - index) : null;
-            
-            let scaleClass = 'scale-100 opacity-100'; 
-            let durationClass = 'duration-300'; 
-            
-            if (hoveredIndex !== null) {
-              if (distance === 0) {
-                scaleClass = 'scale-125 opacity-100 z-10 origin-left'; 
-              } else if (distance === 1) {
-                scaleClass = 'scale-110 opacity-90 origin-left'; 
-              } else {
-                scaleClass = 'scale-95 opacity-60 origin-left'; 
-              }
-
-              if (index < hoveredIndex) {
-                durationClass = 'duration-600'; 
-              } else if (index > hoveredIndex) {
-                durationClass = 'duration-400'; 
-              } else {
-                durationClass = 'duration-300'; 
-              }
-            }
-
-            return (
-              <div 
-                key={item.name} 
-                onMouseEnter={() => setHoveredIndex(index)}
-                onClick={() => {
-                  if (item.name === "Music" && onMusicClick) onMusicClick();
-                  if (item.name === "Link"  && onLinkClick)  onLinkClick();
-                  if (item.name === "About" && onAboutClick) onAboutClick();
-                  if (item.name === "Work"  && onWorkClick)  onWorkClick();
-                }}
-                className={`flex flex-col items-center justify-center cursor-pointer transition-all ${durationClass} ${scaleClass}`}
-              >
-                <img src={item.src} alt={item.name} draggable="false" className="w-12 h-12 object-contain" />
-                <span className="text-xs mb-1 mt-1 font-medium text-white select-none">{item.name}</span>
-              </div>
-            )
-          })}
+          {iconData.map((item) => (
+            <AppIcon key={item.name} item={item} onMusicClick={onMusicClick} onLinkClick={onLinkClick} onAboutClick={onAboutClick} onWorkClick={onWorkClick} mouseY={mouseY} />
+          ))}
         </div>
       )}
 
